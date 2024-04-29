@@ -74,20 +74,41 @@ out     MCUCR, temp_reg                 ; Set MCU Control Register (disable JTAG
 
 ; Initialize digital I/O ports
 setup_digital_io_ports:
-; PORT B: Used for Serial Communication
-ldi     temp_reg, 0xA7
-out     DDRB, temp_reg                  ; Set PORT B Data Direction
-ldi     temp_reg, 0x50
-out     PORTB, temp_reg                 ; Set PORT B Output
+; Setup PORT B for USART Communication
+setup_portb:
+	ldi		temp_reg, 0xA7
+	out		DDRB, temp_reg				; Set DDRB for output
+	ldi		temp_reg, 0x50
+	out		PORTB, temp_reg				; Initialize PORTB
 
-; PORT C: General Purpose I/O
-ldi     temp_reg, 0x80
-out     DDRC, temp_reg                  ; Set PORT C Data Direction
-ldi     temp_reg, 0x40
-out     PORTC, temp_reg                 ; Set PORT C Output
+; Setup PORT C for general I/O
+setup_portc:
+	ldi		temp_reg, 0x80
+	out		DDRC, temp_reg
+	ldi		temp_reg, 0x40	
+	out		PORTC, temp_reg
 
-; Additional setups for PORT D, PORT E, and PORT F (These can be Optional)
+; Setup PORT D for additional I/O or indicators
+setup_portd:
+	ldi		temp_reg, 0x2C
+	out		DDRD, temp_reg	
+	ldi		temp_reg, 0xD3
+	out		PORTD, temp_reg
+	sbi		PORTD, 5						; Turn off GREEN LED
 
+; Setup PORT E for extended functions
+setup_porte:
+	ldi		temp_reg, 0x40
+	out		DDRE, temp_reg	
+	ldi		temp_reg, 0x04			
+	out		PORTE, temp_reg
+
+; Setup PORT F for ADC and other sensors
+setup_portf:
+	ldi		temp_reg, 0x02
+	out		DDRF, temp_reg	
+	ldi		temp_reg, 0xF0
+	out		PORTF, temp_reg
 ; ------------------------------------------------------------------------------
 ; Configure Timer 0
 setup_timers:
@@ -260,6 +281,28 @@ cbi     PORTF, 1                         ; Clear the SS pin to end SPI transacti
 ret
 ; ------------------------------------------------------------------------------
 
+;-------------------------------------------------------------------------------
+; Delay Subroutines for Timing Adjustments
+DELAY_IT:
+    ldi temp, DELAY_2S               ; Load delay constant for 2 seconds
+    call DELAY_SUB                   ; Call generic delay subroutine
+    ret
+
+DELAY_IT_Short:
+    ldi temp, DELAY_500MS            ; Load delay constant for 0.5 seconds
+    call DELAY_SUB                   ; Call generic delay subroutine
+    ret
+
+DELAY_SUB:
+    ; Generic delay subroutine using system timer
+    ; Assumes 'temp' contains the number of seconds to delay
+    ; Uses 'seconds' as the counter (needs to be cleared before calling)
+    clr seconds                      ; Clear the seconds counter
+delay_loop:
+    cpse seconds, temp               ; Compare and skip if equal
+    rjmp delay_loop                  ; Loop until delay is complete
+    ret
+
 
 ; ------------------------------------------------------------------------------
 ; Turn on motor by enabling PWM and configuring necessary registers
@@ -314,4 +357,3 @@ reset_to_initial_state:
 cli                                      ; Disable all interrupts
 jmp     0x00                             ; Reset microcontroller
 ; ------------------------------------------------------------------------------
-
